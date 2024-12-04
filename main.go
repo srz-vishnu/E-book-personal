@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
-	_ "github.com/lib/pq" // Postgres driver import
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -13,29 +14,14 @@ func main() {
 	defer db.Close()
 
 	// Insert a new user
-	// userID, err := CreatUser(db, "anandhu@gmail.com", "anandhu", "password", "234")
-	// if err != nil {
-	// 	log.Fatal("Error creating user:", err)
-	// }
+	userID, err := CreatUser(db, "sherin@gmail.com", "sherin", "password", "text")
+	if err != nil {
+		log.Fatal("Error creating user:", err)
+	}
 
-	// fmt.Printf("New book created with ID: %d\n", userID)
+	fmt.Printf("New book created with ID: %d\n", userID)
 
-	// Insert a new author
-	// authorName, ID, err := CreateAuthor(db, "vishnu")
-	// if err != nil {
-	// 	log.Fatal("error creating author:", err)
-	// }
-	// fmt.Printf("new author is created with ID: %d and Name: %s", ID, authorName)
-
-	// Insert a new book
-	// bookID, err := CreateBook(db, "noble", "fictional", 3, 7, 1)
-	// if err != nil {
-	// 	log.Fatal("Error creating book:", err)
-	// }
-
-	// fmt.Printf("New book created with ID: %d\n", bookID)
-
-	// Get all users
+	// // Get all users
 	usernames, mails, err := GetAllUsers(db)
 	if err != nil {
 		log.Fatalf("Error retrieving users: %v", err)
@@ -44,6 +30,24 @@ func main() {
 	// Print the usernames and mails
 	for i := range usernames {
 		fmt.Printf("Username: %s, Mail: %s\n", usernames[i], mails[i])
+	}
+
+	// Get one User
+	userId := int64(3)
+	username, mail, err := GetOneUser(db, userId)
+	if err != nil {
+		log.Fatalf("Error retrieving user: %v", err)
+	}
+
+	// Print the result
+	fmt.Printf("User found with id: %d\n Username: %s\n Mail: %s\n", userId, username, mail)
+
+	// Deleting an user with id given
+	err = DeleteUser(db, 3) // Delete the user with ID 5
+	if err != nil {
+		log.Fatalf("Error deleting user: %v", err)
+	} else {
+		fmt.Println("User with id 3 deleted successfully")
 	}
 
 }
@@ -92,6 +96,23 @@ func CreatUser(db *sql.DB, mail string, username string, password string, salt s
 	return identity, nil
 }
 
+func GetOneUser(db *sql.DB, userId int64) (string, string, error) {
+	query := `SELECT mail, username FROM users WHERE id = $1`
+
+	// variable to store usernames and mails
+	var username, mail string
+
+	// Use QueryRow since you're expecting a single row result
+	//err = db.QueryRow(query, userId).Scan(&mail, &username)
+	err := db.QueryRow(query, userId).Scan(&mail, &username)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return username, mail, nil
+}
+
 func GetAllUsers(db *sql.DB) ([]string, []string, error) {
 	query := `SELECT mail, username FROM users`
 
@@ -123,25 +144,25 @@ func GetAllUsers(db *sql.DB) ([]string, []string, error) {
 	return userNames, mails, nil
 }
 
-func CreateAuthor(db *sql.DB, name string) (string, int64, error) {
-	query := `INSERT INTO authors (name) VALUES ($1) RETURNING name, id`
+func DeleteUser(db *sql.DB, userID int64) error {
+	// SQL query to delete a user by ID
+	query := `UPDATE users SET is_deleted=$1, deleted_at=$2 WHERE id=$3`
 
-	var Name string
-	var ID int64
-	err := db.QueryRow(query, name).Scan(&Name, &ID)
+	// Execute the query
+	result, err := db.Exec(query, true, time.Now().UTC(), userID)
 	if err != nil {
-		return "", 0, err
+		return err
 	}
-	return Name, ID, nil
-}
 
-func CreateBook(db *sql.DB, title, content string, createdBy int64, authorID, status int64) (int64, error) {
-	query := `INSERT INTO BOOKS (title, content, created_by, author_id, status) VALUES ($1,$2,$3,$4,$5) RETURNING id`
-
-	var ID int64
-	err := db.QueryRow(query, title, content, createdBy, authorID, status).Scan(&ID)
+	// Check if any rows affected.
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return ID, nil
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no user found with ID %d", userID)
+	}
+
+	return nil
 }
