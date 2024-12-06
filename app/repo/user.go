@@ -81,8 +81,8 @@ func GetAllUsers(db *gorm.DB) ([]string, []string, error) {
 
 func DeleteUser(db *gorm.DB, userID int64) error {
 	updates := map[string]interface{}{
-		"is_deleted": true,             // Mark the user as deleted
-		"deleted_at": time.Now().UTC(), // Set the deletion timestamp
+		"is_deleted": true,             // true means its deleted
+		"deleted_at": time.Now().UTC(), // Set the deletion timestamp time of delete
 	}
 
 	// Use GORM to update the fields of the selected user by ID
