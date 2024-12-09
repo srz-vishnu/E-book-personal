@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -43,9 +44,14 @@ func GetOneauthor(db *gorm.DB, userId int64) (string, error) {
 	}
 
 	// Use GORM's First method to retrieve a single record
-	err := db.Table("authors").Select("name").Where("id = ?", userId).First(&result).Error
+	//err := //db.Table("authors").Select("name").Where("id = ?", userId).First(&result).Error
+	err := db.Table("authors").Select("name").Where("id = ? AND status = ?", userId, true).First(&result).Error
 	if err != nil {
-		return "", err
+		// Checking error is "record not found"
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil // author not found case
+		}
+		return "", err // other errors
 	}
 
 	return result.Name, nil
@@ -83,7 +89,7 @@ func DeleteAuthor(db *gorm.DB, authorID int64, deletedBy int64) error {
 	}
 
 	// soft delete so we can keep data for future use
-	err := db.Model(&Author{}).Where("id = ?", authorID).Updates(updates).Error
+	err := db.Model(&Author{}).Where("id = ? AND status = ?", authorID, true).Updates(updates).Error
 	if err != nil {
 		return err
 	}
