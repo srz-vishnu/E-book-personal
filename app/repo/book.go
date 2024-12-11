@@ -2,6 +2,7 @@ package repo
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -67,24 +68,77 @@ func GetOneBook(db *gorm.DB, bookId, status int64) (string, error) {
 }
 
 func GetAllBooks(db *gorm.DB) ([]string, error) {
-	// slice of User structs to hold the results
-	var books []Books
+	// slice of book structs to hold the results
+	var books []Book
 
-	// Fetching the authorname fields from all authors
-	result := db.Model(&Books{}).Select("name").Find(&books)
+	// Fetching the book title fields from all books
+	result := db.Model(&Book{}).Select("title").Find(&books)
 
 	// Check for any errors during execution
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	// Slices to store the retrieved  authornames
-	var authorNames []string
+	// Slices to store the retrieved  book titles
+	var bookTitles []string
 
-	// Iterate over the retrieved authors and extract name one by one
-	for _, author := range authors {
-		authorNames = append(authorNames, author.Name)
+	// Iterate over the retrieved books and extract title one by one
+	for _, book := range books {
+		bookTitles = append(bookTitles, book.Title)
 	}
 
-	return authorNames, nil
+	return bookTitles, nil
+}
+
+func DeleteBookById(db *gorm.DB, ID int64, deletedBy int64) error {
+
+	var book Book
+	err := db.First(&book, ID).Error
+	if err != nil {
+		// Return error if the book does not exist
+		return err
+	}
+
+	// Checking if the book is already deleted or  not
+	if book.Status == 3 {
+		return fmt.Errorf("the book with ID %d is already deleted", ID)
+	}
+
+	// map to hold the fields to update
+	updates := map[string]interface{}{
+		"deleted_at": time.Now(),
+		"deleted_by": deletedBy,
+		"status":     3,
+	}
+
+	// soft delete so we can keep data for future use
+	err = db.Model(&Book{}).Where("id = ?", ID).Updates(updates).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateBook(db *gorm.DB, userId, bookId int64, title, content string, status int64) error {
+
+	updates := map[string]interface{}{
+		"title":      title,
+		"content":    content,
+		"status":     status,
+		"updated_by": userId,
+	}
+
+	result := db.Table("books").Where("id=?", bookId).Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	// Check if any rows were updated
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no active book found with ID %d to update \n", bookId)
+	}
+
+	fmt.Println("book details updated successfully..")
+	return nil
 }

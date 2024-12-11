@@ -81,8 +81,8 @@ func GetAllUsers(db *gorm.DB) ([]string, []string, error) {
 
 func DeleteUser(db *gorm.DB, userID int64) error {
 	updates := map[string]interface{}{
-		"is_deleted": true,             // true means its deleted
-		"deleted_at": time.Now().UTC(), // Set the deletion timestamp time of delete
+		"is_deleted": true,       // true means its deleted
+		"deleted_at": time.Now(), // Set the deletion timestamp time of delete
 	}
 
 	// Use GORM to update the fields of the selected user by ID
@@ -98,5 +98,27 @@ func DeleteUser(db *gorm.DB, userID int64) error {
 		return fmt.Errorf("no user found with ID %d", userID)
 	}
 
+	return nil
+}
+
+func UpdateUser(db *gorm.DB, id int64, newPassword string) error {
+
+	updates := map[string]interface{}{
+		"password":   newPassword,
+		"updated_at": time.Now(),
+	}
+
+	result := db.Table("users").Where("id=?", id).Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	// Check if any rows were updated
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no active user found with ID %d to update", id)
+	}
+
+	log.SetFlags(0)
+	log.Println("user password updated successfully..")
 	return nil
 }

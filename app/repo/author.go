@@ -2,21 +2,23 @@ package repo
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"gorm.io/gorm"
 )
 
 type Author struct {
-	ID        int64     `gorm:"primaryKey;autoIncrement:true"`
-	Name      string    `gorm:"type:varchar(255);not null"`
-	CreatedAt time.Time `gorm:"type:timestamp with time zone;default:current_timestamp"`
-	CreatedBy int64     `gorm:"type:int"`
-	UpdatedAt time.Time `gorm:"type:timestamp with time zone;default:current_timestamp"`
-	UpdatedBy int64     `gorm:"type:int"`
-	DeletedAt time.Time `gorm:"type:timestamp with time zone;default:null"`
-	DeletedBy *int64    `gorm:"type:int"`
-	Status    bool      `gorm:"type:boolean;default:true"`
+	ID        int64          `gorm:"primaryKey;autoIncrement:true"`
+	Name      string         `gorm:"type:varchar(255);not null"`
+	CreatedAt time.Time      `gorm:"type:timestamp with time zone;default:current_timestamp"`
+	CreatedBy int64          `gorm:"type:int"`
+	UpdatedAt time.Time      `gorm:"type:timestamp with time zone;default:current_timestamp"`
+	UpdatedBy int64          `gorm:"type:int"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
+	DeletedBy *int64         `gorm:"type:int"`
+	Status    bool           `gorm:"type:boolean;default:true"`
 }
 
 func CreateAuthor(db *gorm.DB, name string, createdBy, updatedBy int64) (int64, error) {
@@ -25,7 +27,6 @@ func CreateAuthor(db *gorm.DB, name string, createdBy, updatedBy int64) (int64, 
 		CreatedBy: createdBy,
 		Status:    true, //default status true
 		UpdatedBy: updatedBy,
-		DeletedBy: nil,
 	}
 
 	//GORM's Create method to insert the new author
@@ -44,7 +45,6 @@ func GetOneauthor(db *gorm.DB, userId int64) (string, error) {
 	}
 
 	// Use GORM's First method to retrieve a single record
-	//err := //db.Table("authors").Select("name").Where("id = ?", userId).First(&result).Error
 	err := db.Table("authors").Select("name").Where("id = ? AND status = ?", userId, true).First(&result).Error
 	if err != nil {
 		// Checking error is "record not found"
@@ -94,5 +94,28 @@ func DeleteAuthor(db *gorm.DB, authorID int64, deletedBy int64) error {
 		return err
 	}
 
+	return nil
+}
+
+func UpdateAuthor(db *gorm.DB, userId, authorId int64, name string) error {
+
+	updates := map[string]interface{}{
+		"name":       name,
+		"updated_at": time.Now(),
+		"updated_by": userId,
+	}
+
+	result := db.Table("authors").Where("id=?", authorId).Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	// Check if any rows were updated
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no active author found with ID %d to update \n", authorId)
+	}
+
+	log.SetFlags(0)
+	log.Println("author details updated successfully..")
 	return nil
 }
