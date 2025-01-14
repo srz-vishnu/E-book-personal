@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"e-book/app/dto"
 	"errors"
 	"fmt"
 	"log"
@@ -8,6 +9,24 @@ import (
 
 	"gorm.io/gorm"
 )
+
+type AuthorRepo interface {
+	CreateAuthor(args *dto.CreateAuthorRequest) (int64, error)
+	GetOneauthor(userId int64) (string, error)
+	GetAllAuthor() ([]string, error)
+	DeleteAuthor(authorID int64, userId int64) error
+	UpdateAuthor(userId, authorId int64, name string) error
+}
+
+type authorRepoImpl struct {
+	db *gorm.DB
+}
+
+func NewAuthorRepo(db *gorm.DB) AuthorRepo {
+	return &authorRepoImpl{
+		db: db,
+	}
+}
 
 type Author struct {
 	ID        int64          `gorm:"primaryKey;autoIncrement:true"`
@@ -21,23 +40,21 @@ type Author struct {
 	Status    bool           `gorm:"type:boolean;default:true"`
 }
 
-func CreateAuthor(db *gorm.DB, name string, createdBy, updatedBy int64) (int64, error) {
+func (r *authorRepoImpl) CreateAuthor(args *dto.CreateAuthorRequest) (int64, error) {
 	author := Author{
-		Name:      name,
-		CreatedBy: createdBy,
-		Status:    true, //default status true
-		UpdatedBy: updatedBy,
+		Name:   args.AuthorName,
+		Status: true, //default status true
 	}
 
 	//GORM's Create method to insert the new author
-	if err := db.Create(&author).Error; err != nil {
+	if err := r.db.Create(&author).Error; err != nil {
 		return 0, err
 	}
 
 	return author.ID, nil
 }
 
-func GetOneauthor(db *gorm.DB, userId int64) (string, error) {
+func (r *authorRepoImpl) GetOneauthor(userId int64) (string, error) {
 
 	// struct to hold the result
 	var result struct {
@@ -45,7 +62,7 @@ func GetOneauthor(db *gorm.DB, userId int64) (string, error) {
 	}
 
 	// Use GORM's First method to retrieve a single record
-	err := db.Table("authors").Select("name").Where("id = ? AND status = ?", userId, true).First(&result).Error
+	err := r.db.Table("authors").Select("name").Where("id = ? AND status = ?", userId, true).First(&result).Error
 	if err != nil {
 		// Checking error is "record not found"
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -57,12 +74,12 @@ func GetOneauthor(db *gorm.DB, userId int64) (string, error) {
 	return result.Name, nil
 }
 
-func GetAllAuthor(db *gorm.DB) ([]string, error) {
+func (r *authorRepoImpl) GetAllAuthor() ([]string, error) {
 	// slice of User structs to hold the results
 	var authors []Author
 
 	// Fetching the authorname fields from all authors
-	result := db.Model(&Author{}).Select("name").Find(&authors)
+	result := r.db.Model(&Author{}).Select("name").Find(&authors)
 
 	// Check for any errors during execution
 	if result.Error != nil {
@@ -80,16 +97,16 @@ func GetAllAuthor(db *gorm.DB) ([]string, error) {
 	return authorNames, nil
 }
 
-func DeleteAuthor(db *gorm.DB, authorID int64, deletedBy int64) error {
+func (r *authorRepoImpl) DeleteAuthor(authorID int64, userId int64) error {
 	// map to hold the fields to update
 	updates := map[string]interface{}{
 		"deleted_at": time.Now(),
-		"deleted_by": deletedBy,
+		"deleted_by": userId,
 		"status":     false,
 	}
 
 	// soft delete so we can keep data for future use
-	err := db.Model(&Author{}).Where("id = ? AND status = ?", authorID, true).Updates(updates).Error
+	err := r.db.Model(&Author{}).Where("id = ? AND status = ?", authorID, true).Updates(updates).Error
 	if err != nil {
 		return err
 	}
@@ -97,7 +114,7 @@ func DeleteAuthor(db *gorm.DB, authorID int64, deletedBy int64) error {
 	return nil
 }
 
-func UpdateAuthor(db *gorm.DB, userId, authorId int64, name string) error {
+func (r *authorRepoImpl) UpdateAuthor(userId, authorId int64, name string) error {
 
 	updates := map[string]interface{}{
 		"name":       name,
@@ -105,7 +122,7 @@ func UpdateAuthor(db *gorm.DB, userId, authorId int64, name string) error {
 		"updated_by": userId,
 	}
 
-	result := db.Table("authors").Where("id=?", authorId).Updates(updates)
+	result := r.db.Table("authors").Where("id=?", authorId).Updates(updates)
 
 	if result.Error != nil {
 		return result.Error

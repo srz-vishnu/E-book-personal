@@ -1,193 +1,214 @@
 package main
 
 import (
-	"e-book/app/repo"
-	gormdb "e-book/pkg/gorm_db"
-	"fmt"
-	"log"
+
+	//"e-book/app/service"
+
+	"e-book/cmd"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	db, err := gormdb.ConnectDb()
 
-	userConn := repo.User{
-		Mail:     "test1@gmail.com",
-		Username: "testUser1",
-		Password: "password1",
-		Salt:     "random",
-	}
+	cmd.Execute()
+	// db, err := gormdb.ConnectDb()
 
-	// Create a new user
-	userIdentity, err := repo.CreateUser(db, userConn.Mail, userConn.Username, userConn.Password, userConn.Salt)
-	if err != nil {
-		log.Fatalf("Error creating user: %v", err)
-	}
+	// userConn := repo.User{
+	// 	Mail:     "test1004@gmail.com",
+	// 	Username: "testUser100",
+	// 	Password: "password1",
+	// 	Salt:     "random",
+	// }
 
-	// Print the created user's ID
-	fmt.Printf("User created with ID: %d\n", userIdentity)
+	// // Create a new user
+	// userIdentity, err := repo.CreateUser(db, userConn.Mail, userConn.Username, userConn.Password, userConn.Salt)
+	// if err != nil {
+	// 	log.Fatalf("Error creating user: %v", err)
+	// }
 
-	// Get one User
-	idOfUser := int64(3)
-	usernamee, mail, err := repo.GetOneUser(db, idOfUser)
-	if err != nil {
-		log.Fatalf("Error retrieving user: %v", err)
-	}
+	// // Print the created user's ID
+	// fmt.Printf("User created with ID: %d\n", userIdentity)
 
-	// Print the result
-	fmt.Printf("User found with id: %d\n Username: %s\n Mail: %s\n", idOfUser, usernamee, mail)
+	// // Get one User
+	// idOfUser := int64(3)
+	// usernamee, mail, err := repo.GetOneUser(db, idOfUser)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving user: %v", err)
+	// }
 
-	// Get all users
-	usernames, mails, err := repo.GetAllUsers(db)
-	if err != nil {
-		log.Fatalf("Error retrieving users: %v", err)
-	}
+	// // Print the result
+	// fmt.Printf("User found with id: %d\n Username: %s\n Mail: %s\n", idOfUser, usernamee, mail)
 
-	//Print the usernames and mails
-	for i := range usernames {
-		fmt.Printf("Username: %s, Mail: %s\n", usernames[i], mails[i])
-	}
+	// // Get all users
+	// usernames, mails, err := repo.GetAllUsers(db)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving users: %v", err)
+	// }
 
-	// Deleting an user with id given
-	err = repo.DeleteUser(db, 12) // Delete the user with ID
-	if err != nil {
-		log.Fatalf("Error deleting user: %v", err)
-	} else {
-		fmt.Println("User deleted successfully")
-	}
+	// //Print the usernames and mails
+	// for i := range usernames {
+	// 	fmt.Printf("Username: %s, Mail: %s\n", usernames[i], mails[i])
+	// }
 
-	// Updating user password
+	// // Deleting an user with id given
+	// err = repo.DeleteUser(db, 12) // Delete the user with ID
+	// if err != nil {
+	// 	log.Fatalf("Error deleting user: %v", err)
+	// } else {
+	// 	fmt.Println("User deleted successfully")
+	// }
 
-	userID := int64(12)
-	newPassword := "test@34"
-	err = repo.UpdateUser(db, userID, newPassword)
-	if err != nil {
-		log.Fatalf("err in updating user %v", err)
-	}
+	// // Updating user password
 
-	fmt.Printf("User with id %d successfully updated password", userID)
+	// userID := int64(12)
+	// newPassword := "test@34"
+	// err = repo.UpdateUser(db, userID, newPassword)
+	// if err != nil {
+	// 	log.Fatalf("err in updating user %v", err)
+	// }
 
-	// Author part
+	// fmt.Printf("User with id %d successfully updated password", userID)
 
-	authorConn := repo.Author{
-		Name:      "abhi",
-		CreatedBy: 2, //userId
-		UpdatedBy: 2,
-	}
+	// // Author part
 
-	// Create a new author
-	authorIdentity, err := repo.CreateAuthor(db, authorConn.Name, authorConn.CreatedBy, authorConn.UpdatedBy)
-	if err != nil {
-		log.Fatalf("Error creating author: %v", err)
-	}
+	// authorConn := repo.Author{
+	// 	Name:      "abhi",
+	// 	CreatedBy: 2, //userId
+	// 	UpdatedBy: 2,
+	// }
 
-	//Print the created author's ID
-	fmt.Printf("Author created with ID: %d\n", authorIdentity)
+	// // Create a new author
+	// authorIdentity, err := repo.CreateAuthor(db, authorConn.Name, authorConn.CreatedBy, authorConn.UpdatedBy)
+	// if err != nil {
+	// 	log.Fatalf("Error creating author: %v", err)
+	// }
 
-	// Get one Author
-	idOfAuthor := int64(18)
-	authorName, err := repo.GetOneauthor(db, idOfAuthor)
-	if err != nil {
-		log.Fatalf("Error retrieving author: %v", err)
-	}
+	// //Print the created author's ID
+	// fmt.Printf("Author created with ID: %d\n", authorIdentity)
 
-	// Print the result
-	if authorName == "" {
-		fmt.Printf("No author found with id: %d, its already deleted \n", idOfAuthor)
-	} else {
-		fmt.Printf("Author found with id: %d\n Authorname: %s\n", idOfAuthor, authorName)
-	}
+	// // Get one Author
+	// idOfAuthor := int64(18)
+	// authorName, err := repo.GetOneauthor(db, idOfAuthor)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving author: %v", err)
+	// }
 
-	// Get all authors
-	authorNames, err := repo.GetAllAuthor(db)
-	if err != nil {
-		log.Fatalf("Error retrieving all authors: %v", err)
-	}
+	// // Print the result
+	// if authorName == "" {
+	// 	fmt.Printf("No author found with id: %d, its already deleted \n", idOfAuthor)
+	// } else {
+	// 	fmt.Printf("Author found with id: %d\n Authorname: %s\n", idOfAuthor, authorName)
+	// }
 
-	// Print the author names
-	for i := range authorNames {
-		fmt.Printf("Author name: %s \n", authorNames[i])
-	}
+	// // Get all authors
+	// authorNames, err := repo.GetAllAuthor(db)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving all authors: %v", err)
+	// }
 
-	authorIdToDelete := int64(17)
-	deletedBy := int64(3)
-	err = repo.DeleteAuthor(db, authorIdToDelete, deletedBy)
-	if err != nil {
-		log.Fatalf("Error deleting author: %v", err)
-	} else {
-		fmt.Printf("Author with id %d successfully deleted\n", authorIdToDelete)
-	}
+	// // Print the author names
+	// for i := range authorNames {
+	// 	fmt.Printf("Author name: %s \n", authorNames[i])
+	// }
 
-	// Updating author details
-	userId := int64(12)
-	authorId := int64(23)
-	newName := "raina"
-	err = repo.UpdateAuthor(db, userId, authorId, newName)
-	if err != nil {
-		fmt.Printf("error while updating author details %v", err)
-	}
+	// authorIdToDelete := int64(17)
+	// deletedBy := int64(3)
+	// err = repo.DeleteAuthor(db, authorIdToDelete, deletedBy)
+	// if err != nil {
+	// 	log.Fatalf("Error deleting author: %v", err)
+	// } else {
+	// 	fmt.Printf("Author with id %d successfully deleted\n", authorIdToDelete)
+	// }
 
-	fmt.Println("author details updated for author with id:", authorId)
+	// // Updating author details
+	// userId := int64(12)
+	// authorId := int64(23)
+	// newName := "raina"
+	// err = repo.UpdateAuthor(db, userId, authorId, newName)
+	// if err != nil {
+	// 	fmt.Printf("error while updating author details %v", err)
+	// }
+
+	// fmt.Println("author details updated for author with id:", authorId)
 
 	// book part
 
-	// Creating a book
-	bookId, err := repo.CreateBook(db, "physcology of book", 17, 2, 1, "motivational")
-	if err != nil {
-		log.Fatalf("Error Creating a book: %v", err)
-	}
+	// Initialize BookInput struct with values
+	// bookInput := dto.BookInputRequest{
+	// 	Title:     "dune2",
+	// 	AuthorID:  16,
+	// 	CreatedBy: 3,
+	// 	Status:    1,
+	// 	Content:   "fiction",
+	// }
 
-	// Print the created Book's ID
-	fmt.Printf("Book created with ID: %d\n", bookId)
+	// Creating a book
+	// bookOutputResponse, err := service.CreateBookService(db, bookInput)
+	// if err != nil {
+	// 	log.Fatalf("Error creating a book: %v", err)
+	// }
+
+	// Print the created book's details from BookOutput
+	//fmt.Printf("Book created with ID: %d, Title: %s\n", bookOutputResponse.Id, bookOutputResponse.Title)
 
 	//Get one book
-	bookTitle, err := repo.GetOneBook(db, 12, 1)
-	if err != nil {
-		log.Fatalf("error retriving a single book", err)
-	}
+	// bookDet := dto.BookDetailsById{
+	// 	BookID: 12,
+	// }
 
-	// Print the created book's title
-	if bookTitle == "" {
-		fmt.Println("No book found with the given ID and status.")
-	} else {
-		// Print the book's title
-		fmt.Printf("Book found with title: %s\n", bookTitle)
-	}
+	// bookTitle, err := repo.GetOneBook(db, bookDet.BookID)
+	// if err != nil {
+	// 	log.Fatalf("error retriving a single book %v", err)
+	// }
 
-	// Get all Books
-	bookTitles, err := repo.GetAllBooks(db)
-	if err != nil {
-		log.Fatalf("Error retrieving all books: %v", err)
-	}
+	// // Print the created book's title
+	// if bookTitle == "" {
+	// 	fmt.Println("No book found with the given ID and status.")
+	// } else {
+	// 	// Print the book's title
+	// 	fmt.Printf("Book found with title: %s\n", bookTitle)
+	// }
 
-	// Print the book title
-	for i := range bookTitle {
-		fmt.Printf("book title: %s \n", bookTitles[i])
-	}
+	// // Get all Books
+	// bookDetails, err := service.GetallBookDetails(db)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving all books: %v", err)
+	// }
 
-	// Delete book
-	deleteBookByID := int64(12)
-	UserId := int64(3)
+	// // Print the book title
+	// for _, bookDetail := range bookDetails {
+	// 	fmt.Printf("book title: %s , Author_Id:%d \n", bookDetail.Title, bookDetail.Author)
+	// }
 
-	err = repo.DeleteBookById(db, int64(deleteBookByID), userID)
-	if err != nil {
-		log.Fatalf("error while deleting book: %v", err)
-	}
+	// Deleting a book
+	// bookDelete := dto.BookDeleteRequest{
+	// 	UserID: 2,
+	// 	BookId: 16,
+	// }
 
-	fmt.Printf("book deleted succesfully by user %d\n", UserId)
+	// err = service.DeleteBookById(db, bookDelete)
+	// if err != nil {
+	// 	fmt.Println("error at book delete process %v, err")
+	// }
+
+	// fmt.Printf("book deleted succesfully by user %d\n", bookDelete.UserID)
 
 	// book details updation
-	userIdentity = int64(3)
-	bookId = int64(12)
-	title := "goat life"
-	content := "biopic, adventures"
-	status := int64(1)
-	err = repo.UpdateBook(db, userIdentity, bookId, title, content, status)
-	if err != nil {
-		fmt.Printf("error while updating author details %v \n", err)
-	}
+	// bookUpdateInput := dto.BookUpdateRequest{
+	// 	Title:   "edge",
+	// 	BookID:  16,
+	// 	UserID:  12,
+	// 	Status:  1,
+	// 	Content: "mystory",
+	// }
 
-	fmt.Println("book details updated for book with id:", bookId)
+	// // Call the service layer to update the book details
+	// err = service.UpdateBook(db, bookUpdateInput)
+	// if err != nil {
+	// 	fmt.Printf("Error while updating book details: %v\n", err)
+	// } else {
+	// 	fmt.Println("Book details updated successfully for book with ID :", bookUpdateInput.BookID)
+	// }
 
 }

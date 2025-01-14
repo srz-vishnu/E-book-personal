@@ -1,12 +1,31 @@
 package repo
 
 import (
+	"e-book/app/dto"
 	"errors"
 	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+type BookRepo interface {
+	CreateBook(args *dto.BookInputRequest) (int64, error)
+	UpdateBook(args *dto.BookUpdateRequest, bookId int64) error
+	GetAllBooks() ([]Book, error)
+	GetOneBook(bookId int64) (string, error)
+	DeleteBookById(bookId, userId int64) error
+}
+
+type bookRepoImpl struct {
+	db *gorm.DB
+}
+
+func NewBookRepo(db *gorm.DB) BookRepo {
+	return &bookRepoImpl{
+		db: db,
+	}
+}
 
 type Book struct {
 	ID        int64      `gorm:"primaryKey;autoIncrement:true"`
@@ -22,12 +41,12 @@ type Book struct {
 	UpdatedBy *int       `gorm:"index"`
 }
 
-func CreateBook(db *gorm.DB, title string, authorID, createdBy, status int64, content string) (int64, error) {
+func (r *bookRepoImpl) CreateBook(args *dto.BookInputRequest) (int64, error) {
 	book := Book{
-		Title:     title,
-		AuthorID:  authorID,
-		Content:   content,
-		CreatedBy: createdBy,
+		Title:     args.Title,
+		AuthorID:  args.AuthorID,
+		Content:   args.Content,
+		CreatedBy: args.CreatedBy,
 		Status:    1,
 		DeletedBy: nil,
 		DeletedAt: nil,
@@ -35,14 +54,14 @@ func CreateBook(db *gorm.DB, title string, authorID, createdBy, status int64, co
 	}
 
 	// Create method to insert the new book
-	if err := db.Create(&book).Error; err != nil {
+	if err := r.db.Create(&book).Error; err != nil {
 		return 0, err
 	}
 
 	return book.ID, nil
 }
 
-func GetOneBook(db *gorm.DB, bookId, status int64) (string, error) {
+func (r *bookRepoImpl) GetOneBook(bookId int64) (string, error) {
 
 	// struct to hold the result
 	var result struct {
@@ -51,7 +70,7 @@ func GetOneBook(db *gorm.DB, bookId, status int64) (string, error) {
 	}
 
 	// Use GORM's First method to retrieve a single book with id
-	err := db.Table("books").Select("title").Where("id = ? AND status = ?", bookId, status).First(&result).Error
+	err := r.db.Table("books").Select("title, status").Where("id = ?", bookId).First(&result).Error
 	if err != nil {
 		// Checking error is "record not found"
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -67,33 +86,23 @@ func GetOneBook(db *gorm.DB, bookId, status int64) (string, error) {
 	return result.Title, nil
 }
 
-func GetAllBooks(db *gorm.DB) ([]string, error) {
-	// slice of book structs to hold the results
+func (r *bookRepoImpl) GetAllBooks() ([]Book, error) {
 	var books []Book
 
-	// Fetching the book title fields from all books
-	result := db.Model(&Book{}).Select("title").Find(&books)
-
-	// Check for any errors during execution
+	// Fetch all books
+	result := r.db.Find(&books)
 	if result.Error != nil {
+		fmt.Println("error retriving all book details")
 		return nil, result.Error
 	}
 
-	// Slices to store the retrieved  book titles
-	var bookTitles []string
-
-	// Iterate over the retrieved books and extract title one by one
-	for _, book := range books {
-		bookTitles = append(bookTitles, book.Title)
-	}
-
-	return bookTitles, nil
+	return books, nil
 }
 
-func DeleteBookById(db *gorm.DB, ID int64, deletedBy int64) error {
+func (r *bookRepoImpl) DeleteBookById(bookId int64, userId int64) error {
 
 	var book Book
-	err := db.First(&book, ID).Error
+	err := r.db.First(&book, bookId).Error
 	if err != nil {
 		// Return error if the book does not exist
 		return err
@@ -101,18 +110,18 @@ func DeleteBookById(db *gorm.DB, ID int64, deletedBy int64) error {
 
 	// Checking if the book is already deleted or  not
 	if book.Status == 3 {
-		return fmt.Errorf("the book with ID %d is already deleted", ID)
+		return fmt.Errorf("the book with ID %d is already deleted", bookId)
 	}
 
 	// map to hold the fields to update
 	updates := map[string]interface{}{
 		"deleted_at": time.Now(),
-		"deleted_by": deletedBy,
+		"deleted_by": userId,
 		"status":     3,
 	}
 
 	// soft delete so we can keep data for future use
-	err = db.Model(&Book{}).Where("id = ?", ID).Updates(updates).Error
+	err = r.db.Model(&Book{}).Where("id = ?", bookId).Updates(updates).Error
 	if err != nil {
 		return err
 	}
@@ -120,16 +129,16 @@ func DeleteBookById(db *gorm.DB, ID int64, deletedBy int64) error {
 	return nil
 }
 
-func UpdateBook(db *gorm.DB, userId, bookId int64, title, content string, status int64) error {
+func (r *bookRepoImpl) UpdateBook(args *dto.BookUpdateRequest, bookId int64) error {
 
 	updates := map[string]interface{}{
-		"title":      title,
-		"content":    content,
-		"status":     status,
-		"updated_by": userId,
+		"title":      args.Title,
+		"content":    args.Content,
+		"status":     args.Status,
+		"updated_by": args.UserID,
 	}
 
-	result := db.Table("books").Where("id=?", bookId).Updates(updates)
+	result := r.db.Table("books").Where("id=?", bookId).Updates(updates)
 
 	if result.Error != nil {
 		return result.Error
