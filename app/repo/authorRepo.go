@@ -13,7 +13,7 @@ import (
 type AuthorRepo interface {
 	CreateAuthor(args *dto.CreateAuthorRequest) (int64, error)
 	GetOneauthor(userId int64) (string, error)
-	GetAllAuthor() ([]string, error)
+	GetAllAuthor() ([]Author, error)
 	DeleteAuthor(authorID int64, userId int64) error
 	UpdateAuthor(userId, authorId int64, name string) error
 }
@@ -74,27 +74,19 @@ func (r *authorRepoImpl) GetOneauthor(userId int64) (string, error) {
 	return result.Name, nil
 }
 
-func (r *authorRepoImpl) GetAllAuthor() ([]string, error) {
-	// slice of User structs to hold the results
+func (r *authorRepoImpl) GetAllAuthor() ([]Author, error) {
+	// slice of Author structs to hold the results
 	var authors []Author
 
-	// Fetching the authorname fields from all authors
-	result := r.db.Model(&Author{}).Select("name").Find(&authors)
+	// Fetching the id and name fields from all authors
+	result := r.db.Model(&Author{}).Select("id, name").Find(&authors)
 
 	// Check for any errors during execution
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
-	// Slices to store the retrieved  authornames
-	var authorNames []string
-
-	// Iterate over the retrieved authors and extract name one by one
-	for _, author := range authors {
-		authorNames = append(authorNames, author.Name)
-	}
-
-	return authorNames, nil
+	return authors, nil
 }
 
 func (r *authorRepoImpl) DeleteAuthor(authorID int64, userId int64) error {
