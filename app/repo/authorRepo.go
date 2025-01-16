@@ -61,7 +61,7 @@ func (r *authorRepoImpl) GetOneauthor(userId int64) (string, error) {
 		Name string `gorm:"column:name"`
 	}
 
-	// Use GORM's First method to retrieve a single record
+	// Use GORM's First method to retrieve a single record of author
 	err := r.db.Table("authors").Select("name").Where("id = ? AND status = ?", userId, true).First(&result).Error
 	if err != nil {
 		// Checking error is "record not found"

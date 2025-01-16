@@ -3,6 +3,7 @@ package service
 import (
 	"e-book/app/dto"
 	"e-book/app/repo"
+	"e-book/pkg/e"
 	"fmt"
 	"net/http"
 
@@ -32,18 +33,18 @@ func (s *userServiceImpl) CreateUser(r *http.Request) (*dto.CreateUSerResponse, 
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse request body: %w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate request body: %w", err)
+		return nil, e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	userID, err := s.userRepo.CreateUser(args)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+		return nil, e.NewError(e.ErrExecuteSQL, "error while creating user", err)
 	}
 
 	return &dto.CreateUSerResponse{
@@ -57,18 +58,18 @@ func (s *userServiceImpl) UpdateUser(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to parse the requst: %w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate request body :%w", err)
+		return e.NewError(e.ErrValidateRequest, "error validating the req body", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	err = s.userRepo.UpdateUser(args, args.UserId)
 	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
+		return e.NewError(e.ErrExecuteSQL, "error while updating the user details", err)
 	}
 	return nil
 }
@@ -78,12 +79,12 @@ func (s *userServiceImpl) GetUserById(r *http.Request) (*dto.GetUserDetailRespon
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse the requst: %w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing the req body", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate the requst: %w", err)
+		return nil, e.NewError(e.ErrValidateRequest, "error while validating the req body", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
@@ -91,7 +92,7 @@ func (s *userServiceImpl) GetUserById(r *http.Request) (*dto.GetUserDetailRespon
 
 	userName, userMail, err = s.userRepo.GetOneUser(args.UserId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get the user details: %w", err)
+		return nil, e.NewError(e.ErrExecuteSQL, "error while retryving given user by id", err)
 	}
 
 	return &dto.GetUserDetailResponse{
@@ -104,8 +105,7 @@ func (s *userServiceImpl) GetallUserDetails(r *http.Request) ([]*dto.UserDetails
 
 	allUserDetails, err := s.userRepo.GetAllUsers()
 	if err != nil {
-		fmt.Printf(" error while getting all user details %v", err)
-		return nil, err
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing the req.body", err)
 	}
 
 	var userDetails []*dto.UserDetails
@@ -127,18 +127,18 @@ func (s *userServiceImpl) DeleteUserById(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to parse the requst: %w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while parsing the request body", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate the requst: %w", err)
+		return e.NewError(e.ErrValidateRequest, "error while validating req body", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	err = s.userRepo.DeleteUserId(args.UserId)
 	if err != nil {
-		return fmt.Errorf("failed to delete the user : %w", err)
+		return e.NewError(e.ErrExecuteSQL, "error while deleting the user", err)
 	}
 	log.Info().Msg("succesfully deleted user")
 

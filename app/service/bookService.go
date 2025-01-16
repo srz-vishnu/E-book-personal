@@ -3,6 +3,7 @@ package service
 import (
 	"e-book/app/dto"
 	"e-book/app/repo"
+	"e-book/pkg/e"
 	"fmt"
 	"net/http"
 
@@ -13,7 +14,7 @@ type BookService interface {
 	CreateBookService(r *http.Request) (*dto.BookOutputResponse, error)
 	UpdateBook(r *http.Request) error
 	DeleteBookById(r *http.Request) error
-	GetBookById(r *http.Request, book dto.BookDetailsById) (*dto.BookDetailsByIdResponse, error)
+	GetBookById(r *http.Request) (*dto.BookDetailsByIdResponse, error)
 	GetallBookDetails(r *http.Request) ([]dto.BookDetails, error)
 }
 
@@ -33,18 +34,18 @@ func (s bookServiceImpl) CreateBookService(r *http.Request) (*dto.BookOutputResp
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse request body: %w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate request body: %w", err)
+		return nil, e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	bookID, err := s.bookRepo.CreateBook(args)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create book: %w", err)
+		return nil, e.NewError(e.ErrExecuteSQL, "failed to create book", err)
 	}
 
 	return &dto.BookOutputResponse{
@@ -58,18 +59,18 @@ func (s bookServiceImpl) UpdateBook(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to parse request body: %w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate request body: %w", err)
+		return e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	err = s.bookRepo.UpdateBook(args, args.BookID)
 	if err != nil {
-		fmt.Printf("error while creating an book %v", err)
+		return e.NewError(e.ErrExecuteSQL, "Failed to update book", err)
 	}
 
 	return nil
@@ -80,38 +81,38 @@ func (s bookServiceImpl) DeleteBookById(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("failed to parse request body: %w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate request body: %w", err)
+		return e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 
 	err = s.bookRepo.DeleteBookById(args.BookId, args.UserID)
 	if err != nil {
-		fmt.Printf("error while deleting book %v", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while dleeting the book", err)
 	}
 	return nil
 }
 
-func (s bookServiceImpl) GetBookById(r *http.Request, book dto.BookDetailsById) (*dto.BookDetailsByIdResponse, error) {
+func (s bookServiceImpl) GetBookById(r *http.Request) (*dto.BookDetailsByIdResponse, error) {
 	args := &dto.BookDetailsById{}
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse request body: %w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate request body: %w", err)
+		return nil, e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 
 	bookTitle, err := s.bookRepo.GetOneBook(args.BookID)
 	if err != nil {
 		fmt.Printf("error getting book by given id %v", err)
-		return nil, err
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while dleeting the book", err)
 	}
 
 	return &dto.BookDetailsByIdResponse{
@@ -124,7 +125,7 @@ func (s bookServiceImpl) GetallBookDetails(r *http.Request) ([]dto.BookDetails, 
 
 	allBookDetails, err := s.bookRepo.GetAllBooks()
 	if err != nil {
-		fmt.Printf(" error while getting all book details %v", err)
+		return nil, e.NewError(e.ErrExecuteSQL, "error while getting all book details", err)
 		return nil, err
 	}
 

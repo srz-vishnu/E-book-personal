@@ -3,6 +3,7 @@ package service
 import (
 	"e-book/app/dto"
 	"e-book/app/repo"
+	"e-book/pkg/e"
 	"fmt"
 	"net/http"
 
@@ -12,9 +13,9 @@ import (
 type AuthorService interface {
 	CreateAuthor(r *http.Request) (*dto.CreateAuthorResponse, error)
 	GetAuthorById(r *http.Request) (*dto.GetAuthorDetailResponse, error)
-	UpdateAuthor(r *http.Request) error
+	UpdateAuthor(r *http.Request) (err error)
 	GetallAuthorDetails(r *http.Request) ([]dto.AuthorDetail, error)
-	DeleteAuthorById(r *http.Request) error
+	DeleteAuthorById(r *http.Request) (err error)
 }
 
 type authorServiceImpl struct {
@@ -32,18 +33,20 @@ func (s *authorServiceImpl) CreateAuthor(r *http.Request) (*dto.CreateAuthorResp
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing :%w", err)
+		//return nil, fmt.Errorf("error while parsing :%w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while validating", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("error while validating :%w", err)
+		//return nil, fmt.Errorf("error while validating :%w", err)
+		return nil, e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	authorId, err := s.authorRepo.CreateAuthor(&args)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating author :%d", err)
+		return nil, e.NewError(e.ErrCreateAuthor, "error while creating author", err)
 	}
 
 	return &dto.CreateAuthorResponse{
@@ -57,18 +60,18 @@ func (s *authorServiceImpl) GetAuthorById(r *http.Request) (*dto.GetAuthorDetail
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing :%w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while validating", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return nil, fmt.Errorf("error while validating :%w", err)
+		return nil, e.NewError(e.ErrDecodeRequestBody, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	authorName, err := s.authorRepo.GetOneauthor(args.AuthorId)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating author by given userId :%d", err)
+		return nil, e.NewError(e.ErrGetAuthorById, "error while getting author by id", err)
 	}
 
 	return &dto.GetAuthorDetailResponse{
@@ -82,18 +85,18 @@ func (s *authorServiceImpl) UpdateAuthor(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("error while parsing :%w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while decoding", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("error while validating :%w", err)
+		return e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	err = s.authorRepo.UpdateAuthor(args.UserID, args.AuthorId, args.AuthorName)
 	if err != nil {
-		return fmt.Errorf("error while updating author :%d", err)
+		return e.NewError(e.ErrUpdateAuthor, "error while author author by id", err)
 	}
 	log.Info().Msg("Successfully author profile updated")
 
@@ -105,7 +108,7 @@ func (s *authorServiceImpl) GetallAuthorDetails(r *http.Request) ([]dto.AuthorDe
 
 	allAuthorDet, err := s.authorRepo.GetAllAuthor()
 	if err != nil {
-		return nil, fmt.Errorf("error while getting all author details :%d", err)
+		return nil, e.NewError(e.ErrGetAllAuthorDetails, "error while getting all author details", err)
 	}
 	log.Info().Msg("Successfully author profile updated")
 
@@ -129,18 +132,18 @@ func (s *authorServiceImpl) DeleteAuthorById(r *http.Request) error {
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		return fmt.Errorf("error while parsing :%w", err)
+		return e.NewError(e.ErrDecodeRequestBody, "error while decoding", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		return fmt.Errorf("error while validating :%w", err)
+		return e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
 	err = s.authorRepo.DeleteAuthor(args.AuthorId, args.UserID)
 	if err != nil {
-		return fmt.Errorf("error while deleting the author :%w", err)
+		return e.NewError(e.ErrDeleteAuthor, "error while getting all author details", err)
 	}
 	log.Info().Msg("Successfully removed the author")
 
