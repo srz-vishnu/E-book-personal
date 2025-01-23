@@ -4,10 +4,12 @@ import (
 	"e-book/app/dto"
 	"e-book/app/repo"
 	"e-book/pkg/e"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type AuthorService interface {
@@ -33,13 +35,11 @@ func (s *authorServiceImpl) CreateAuthor(r *http.Request) (*dto.CreateAuthorResp
 
 	err := args.Parse(r.Body)
 	if err != nil {
-		//return nil, fmt.Errorf("error while parsing :%w", err)
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while validating", err)
 	}
 
 	err = args.Validate()
 	if err != nil {
-		//return nil, fmt.Errorf("error while validating :%w", err)
 		return nil, e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
@@ -48,6 +48,7 @@ func (s *authorServiceImpl) CreateAuthor(r *http.Request) (*dto.CreateAuthorResp
 	if err != nil {
 		return nil, e.NewError(e.ErrCreateAuthor, "error while creating author", err)
 	}
+	log.Info().Msgf("Successfully created author with id %d:", authorId)
 
 	return &dto.CreateAuthorResponse{
 		AuthorName: args.AuthorName,
@@ -58,7 +59,7 @@ func (s *authorServiceImpl) CreateAuthor(r *http.Request) (*dto.CreateAuthorResp
 func (s *authorServiceImpl) GetAuthorById(r *http.Request) (*dto.GetAuthorDetailResponse, error) {
 	args := dto.GetAuthorDetailRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while validating", err)
 	}
@@ -71,6 +72,9 @@ func (s *authorServiceImpl) GetAuthorById(r *http.Request) (*dto.GetAuthorDetail
 
 	authorName, err := s.authorRepo.GetOneauthor(args.AuthorId)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewError(e.ErrResourceNotFound, "author not found in the table", err)
+		}
 		return nil, e.NewError(e.ErrGetAuthorById, "error while getting author by id", err)
 	}
 
@@ -83,7 +87,7 @@ func (s *authorServiceImpl) GetAuthorById(r *http.Request) (*dto.GetAuthorDetail
 func (s *authorServiceImpl) UpdateAuthor(r *http.Request) error {
 	args := dto.AuthorupdateRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return e.NewError(e.ErrDecodeRequestBody, "error while decoding", err)
 	}
@@ -96,6 +100,9 @@ func (s *authorServiceImpl) UpdateAuthor(r *http.Request) error {
 
 	err = s.authorRepo.UpdateAuthor(args.UserID, args.AuthorId, args.AuthorName)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewError(e.ErrResourceNotFound, "author not found in the table", err)
+		}
 		return e.NewError(e.ErrUpdateAuthor, "error while author author by id", err)
 	}
 	log.Info().Msg("Successfully author profile updated")
@@ -130,7 +137,7 @@ func (s *authorServiceImpl) GetallAuthorDetails(r *http.Request) ([]dto.AuthorDe
 func (s *authorServiceImpl) DeleteAuthorById(r *http.Request) error {
 	args := &dto.AuthorDeleteRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return e.NewError(e.ErrDecodeRequestBody, "error while decoding", err)
 	}
@@ -141,8 +148,11 @@ func (s *authorServiceImpl) DeleteAuthorById(r *http.Request) error {
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
-	err = s.authorRepo.DeleteAuthor(args.AuthorId, args.UserID)
+	err = s.authorRepo.DeleteAuthor(args)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewError(e.ErrResourceNotFound, "author not found in the table", err)
+		}
 		return e.NewError(e.ErrDeleteAuthor, "error while getting all author details", err)
 	}
 	log.Info().Msg("Successfully removed the author")

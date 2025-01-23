@@ -1,9 +1,10 @@
 package dto
 
 import (
-	"encoding/json"
-	"io"
+	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator"
 )
 
@@ -16,12 +17,13 @@ type GetAuthorDetailResponse struct {
 	AuthorId   int64  `json:"authorid"`
 }
 
-func (args *GetAuthorDetailRequest) Parse(body io.ReadCloser) error {
-	decoder := json.NewDecoder(body)
-	err := decoder.Decode(&args)
+func (args *GetAuthorDetailRequest) Parse(r *http.Request) error {
+	strID := chi.URLParam(r, "id")
+	intID, err := strconv.Atoi(strID)
 	if err != nil {
 		return err
 	}
+	args.AuthorId = int64(intID)
 	return nil
 }
 

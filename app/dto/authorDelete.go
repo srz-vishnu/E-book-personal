@@ -2,22 +2,30 @@ package dto
 
 import (
 	"encoding/json"
-	"io"
+	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator"
 )
 
 type AuthorDeleteRequest struct {
-	UserID   int64 `json:"userid" validate:"required"`
-	AuthorId int64 `json:"authorid" validate:"required"`
+	UserID   int64 `json:"deleted_by" validate:"required"`
+	AuthorId int64 `json:"authorid" `
 }
 
-func (args *AuthorDeleteRequest) Parse(body io.ReadCloser) error {
-	decoder := json.NewDecoder(body)
-	err := decoder.Decode(&args)
+func (args *AuthorDeleteRequest) Parse(r *http.Request) error {
+	strID := chi.URLParam(r, "id")
+	intID, err := strconv.Atoi(strID)
 	if err != nil {
 		return err
 	}
+	args.AuthorId = int64(intID)
+
+	if err := json.NewDecoder(r.Body).Decode(&args); err != nil {
+		return err
+	}
+
 	return nil
 }
 

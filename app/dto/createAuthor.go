@@ -9,6 +9,7 @@ import (
 
 type CreateAuthorRequest struct {
 	AuthorName string `json:"authorname" validate:"required"`
+	UserId     int64  `json:"userid" validate:"required"`
 }
 
 type CreateAuthorResponse struct {

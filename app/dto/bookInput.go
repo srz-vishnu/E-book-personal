@@ -2,7 +2,7 @@ package dto
 
 import (
 	"encoding/json"
-	"io"
+	"net/http"
 
 	"github.com/go-playground/validator"
 )
@@ -21,8 +21,8 @@ type BookOutputResponse struct {
 	Title string `json:"title"`
 }
 
-func (args *BookInputRequest) Parse(body io.ReadCloser) error {
-	decoder := json.NewDecoder(body)
+func (args *BookInputRequest) Parse(r *http.Request) error {
+	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&args)
 	if err != nil {
 		return err

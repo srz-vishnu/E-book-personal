@@ -1,9 +1,12 @@
 package dto
 
 import (
-	"encoding/json"
-	"io"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator"
 )
 
@@ -16,12 +19,17 @@ type GetUserDetailResponse struct {
 	Mail     string `json:"mail"`
 }
 
-func (args *GetUserDetailRequest) Parse(body io.ReadCloser) error {
-	decoder := json.NewDecoder(body)
-	err := decoder.Decode(&args)
+func (args *GetUserDetailRequest) Parse(r *http.Request) error {
+	strID := chi.URLParam(r, "id")
+	log.Printf("Extracted ID from URL issssssssssssssssss: '%s'\n", strID)
+	if strID == "" {
+		return fmt.Errorf("id parameter is missing or empty")
+	}
+	intID, err := strconv.Atoi(strID)
 	if err != nil {
 		return err
 	}
+	args.UserId = int64(intID)
 	return nil
 }
 

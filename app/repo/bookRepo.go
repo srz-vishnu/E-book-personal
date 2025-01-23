@@ -11,10 +11,10 @@ import (
 
 type BookRepo interface {
 	CreateBook(args *dto.BookInputRequest) (int64, error)
-	UpdateBook(args *dto.BookUpdateRequest, bookId int64) error
+	UpdateBook(args *dto.BookUpdateRequest) error
 	GetAllBooks() ([]Book, error)
-	GetOneBook(bookId int64) (string, error)
-	DeleteBookById(bookId, userId int64) error
+	GetOneBook(bookId int) (string, error)
+	DeleteBookById(args *dto.BookDeleteRequest) error
 }
 
 type bookRepoImpl struct {
@@ -53,15 +53,15 @@ func (r *bookRepoImpl) CreateBook(args *dto.BookInputRequest) (int64, error) {
 		UpdatedBy: nil,
 	}
 
-	// Create method to insert the new book
-	if err := r.db.Create(&book).Error; err != nil {
+	//GORM's Create method to insert the new book
+	if err := r.db.Table("books").Create(book).Error; err != nil {
 		return 0, err
 	}
 
 	return book.ID, nil
 }
 
-func (r *bookRepoImpl) GetOneBook(bookId int64) (string, error) {
+func (r *bookRepoImpl) GetOneBook(bookId int) (string, error) {
 
 	// struct to hold the result
 	var result struct {
@@ -74,7 +74,7 @@ func (r *bookRepoImpl) GetOneBook(bookId int64) (string, error) {
 	if err != nil {
 		// Checking error is "record not found"
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", nil // author not found case
+			return "", gorm.ErrRecordNotFound // author not found case
 		}
 		return "", err // other errors
 	}
@@ -99,10 +99,10 @@ func (r *bookRepoImpl) GetAllBooks() ([]Book, error) {
 	return books, nil
 }
 
-func (r *bookRepoImpl) DeleteBookById(bookId int64, userId int64) error {
+func (r *bookRepoImpl) DeleteBookById(args *dto.BookDeleteRequest) error {
 
 	var book Book
-	err := r.db.First(&book, bookId).Error
+	err := r.db.First(&book, args.BookId).Error
 	if err != nil {
 		// Return error if the book does not exist
 		return err
@@ -110,18 +110,18 @@ func (r *bookRepoImpl) DeleteBookById(bookId int64, userId int64) error {
 
 	// Checking if the book is already deleted or  not
 	if book.Status == 3 {
-		return fmt.Errorf("the book with ID %d is already deleted", bookId)
+		return fmt.Errorf("the book with ID %d is already deleted", args.BookId)
 	}
 
 	// map to hold the fields to update
 	updates := map[string]interface{}{
 		"deleted_at": time.Now(),
-		"deleted_by": userId,
+		"deleted_by": args.UserID,
 		"status":     3,
 	}
 
 	// soft delete so we can keep data for future use
-	err = r.db.Model(&Book{}).Where("id = ?", bookId).Updates(updates).Error
+	err = r.db.Model(&Book{}).Where("id = ?", args.BookId).Updates(updates).Error
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (r *bookRepoImpl) DeleteBookById(bookId int64, userId int64) error {
 	return nil
 }
 
-func (r *bookRepoImpl) UpdateBook(args *dto.BookUpdateRequest, bookId int64) error {
+func (r *bookRepoImpl) UpdateBook(args *dto.BookUpdateRequest) error {
 
 	updates := map[string]interface{}{
 		"title":      args.Title,
@@ -138,14 +138,14 @@ func (r *bookRepoImpl) UpdateBook(args *dto.BookUpdateRequest, bookId int64) err
 		"updated_by": args.UserID,
 	}
 
-	result := r.db.Table("books").Where("id=?", bookId).Updates(updates)
+	result := r.db.Table("books").Where("id=?", args.ID).Updates(updates)
 
 	if result.Error != nil {
 		return result.Error
 	}
 	// Check if any rows were updated
 	if result.RowsAffected == 0 {
-		return fmt.Errorf("no active book found with ID %d to update \n", bookId)
+		return fmt.Errorf("no active book found with ID %d to update \n", args.ID)
 	}
 
 	fmt.Println("book details updated successfully..")

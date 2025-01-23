@@ -4,10 +4,14 @@ import (
 	"e-book/app/dto"
 	"e-book/app/repo"
 	"e-book/pkg/e"
+
+	//"e-book/pkg/log"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 type BookService interface {
@@ -32,7 +36,7 @@ func NewBookService(bookRepo repo.BookRepo) BookService {
 func (s bookServiceImpl) CreateBookService(r *http.Request) (*dto.BookOutputResponse, error) {
 	args := &dto.BookInputRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
@@ -57,7 +61,7 @@ func (s bookServiceImpl) CreateBookService(r *http.Request) (*dto.BookOutputResp
 func (s bookServiceImpl) UpdateBook(r *http.Request) error {
 	args := &dto.BookUpdateRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
@@ -68,8 +72,11 @@ func (s bookServiceImpl) UpdateBook(r *http.Request) error {
 	}
 	log.Info().Msg("Successfully completed parsing and validation of request body")
 
-	err = s.bookRepo.UpdateBook(args, args.BookID)
+	err = s.bookRepo.UpdateBook(args)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewError(e.ErrResourceNotFound, "book not found in the table", err)
+		}
 		return e.NewError(e.ErrExecuteSQL, "Failed to update book", err)
 	}
 
@@ -79,7 +86,7 @@ func (s bookServiceImpl) UpdateBook(r *http.Request) error {
 func (s bookServiceImpl) DeleteBookById(r *http.Request) error {
 	args := &dto.BookDeleteRequest{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
@@ -89,17 +96,21 @@ func (s bookServiceImpl) DeleteBookById(r *http.Request) error {
 		return e.NewError(e.ErrValidateRequest, "error while validating", err)
 	}
 
-	err = s.bookRepo.DeleteBookById(args.BookId, args.UserID)
+	err = s.bookRepo.DeleteBookById(args)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return e.NewError(e.ErrResourceNotFound, "book not found in the record", err)
+		}
 		return e.NewError(e.ErrDecodeRequestBody, "error while dleeting the book", err)
 	}
+
 	return nil
 }
 
 func (s bookServiceImpl) GetBookById(r *http.Request) (*dto.BookDetailsByIdResponse, error) {
 	args := &dto.BookDetailsById{}
 
-	err := args.Parse(r.Body)
+	err := args.Parse(r)
 	if err != nil {
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing", err)
 	}
@@ -111,6 +122,9 @@ func (s bookServiceImpl) GetBookById(r *http.Request) (*dto.BookDetailsByIdRespo
 
 	bookTitle, err := s.bookRepo.GetOneBook(args.BookID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewError(e.ErrResourceNotFound, "book not in the table", err)
+		}
 		fmt.Printf("error getting book by given id %v", err)
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while dleeting the book", err)
 	}
@@ -126,7 +140,6 @@ func (s bookServiceImpl) GetallBookDetails(r *http.Request) ([]dto.BookDetails, 
 	allBookDetails, err := s.bookRepo.GetAllBooks()
 	if err != nil {
 		return nil, e.NewError(e.ErrExecuteSQL, "error while getting all book details", err)
-		return nil, err
 	}
 
 	var bookDetails []dto.BookDetails

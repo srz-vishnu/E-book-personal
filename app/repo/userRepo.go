@@ -2,6 +2,7 @@ package repo
 
 import (
 	"e-book/app/dto"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -42,17 +43,17 @@ type User struct {
 
 func (r *userRepoImpl) CreateUser(args *dto.CreateUserRequest) (int64, error) {
 	user := User{
+		ID:       args.UserId,
 		Mail:     args.Mail,
 		Username: args.UserName,
 		Password: args.Password,
 		Salt:     args.Salt,
 	}
 
-	// Use GORM's Create method to insert the new user
-	if err := r.db.Create(&user).Error; err != nil {
+	//GORM's Create method to insert the new user
+	if err := r.db.Table("users").Create(user).Error; err != nil {
 		return 0, err
 	}
-
 	return user.ID, nil
 }
 
@@ -67,7 +68,11 @@ func (r *userRepoImpl) GetOneUser(userId int64) (string, string, error) {
 	// Use GORM's First method to retrieve a single record
 	err := r.db.Table("users").Select("mail, username").Where("id = ?", userId).First(&result).Error
 	if err != nil {
-		return "", "", err
+		// Checking error is "record not found"
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", "", gorm.ErrRecordNotFound // author not found case
+		}
+		return "", "", err // other errors
 	}
 
 	return result.Username, result.Mail, nil

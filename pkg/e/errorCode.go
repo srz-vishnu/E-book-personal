@@ -37,6 +37,12 @@ const (
 	ErrCreateBook
 )
 
+// 404 errors
+const (
+	// ErrResourceNotFound : when no record corresponding to the requested id is found in the DB
+	ErrResourceNotFound int = 404000 + iota
+)
+
 // 500 errors
 const (
 	// ErrInternalServer : the default error, which is unexpected from the developers

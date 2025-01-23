@@ -2,13 +2,14 @@ package dto
 
 import (
 	"encoding/json"
-	"io"
+	"net/http"
 
 	"github.com/go-playground/validator"
 )
 
 // struct to hold the data for creating a user
 type CreateUserRequest struct {
+	UserId   int64  `json:"userid"`
 	Mail     string `json:"mail"`
 	UserName string `json:"username"`
 	Password string `json:"password"`
@@ -19,8 +20,8 @@ type CreateUSerResponse struct {
 	UserId int64 `json:"userid"`
 }
 
-func (args *CreateUserRequest) Parse(body io.ReadCloser) error {
-	decoder := json.NewDecoder(body)
+func (args *CreateUserRequest) Parse(r *http.Request) error {
+	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&args)
 	if err != nil {
 		return err
