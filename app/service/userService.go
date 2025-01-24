@@ -48,6 +48,7 @@ func (s *userServiceImpl) CreateUser(r *http.Request) (*dto.CreateUSerResponse, 
 	if err != nil {
 		return nil, e.NewError(e.ErrExecuteSQL, "error while creating user", err)
 	}
+	log.Info().Msgf("Successfully created user with id %d", userID)
 
 	return &dto.CreateUSerResponse{
 		UserId: userID,
@@ -76,6 +77,9 @@ func (s *userServiceImpl) UpdateUser(r *http.Request) error {
 		}
 		return e.NewError(e.ErrExecuteSQL, "error while updating the user details", err)
 	}
+
+	log.Info().Msg("Successfully completed parsing and validation of request body")
+
 	return nil
 }
 
@@ -102,6 +106,7 @@ func (s *userServiceImpl) GetUserById(r *http.Request) (*dto.GetUserDetailRespon
 		}
 		return nil, e.NewError(e.ErrExecuteSQL, "error while retryving given user by id", err)
 	}
+	log.Info().Msgf("Successfully retrived given user details")
 
 	return &dto.GetUserDetailResponse{
 		UserName: userName,
@@ -115,6 +120,7 @@ func (s *userServiceImpl) GetallUserDetails(r *http.Request) ([]*dto.UserDetails
 	if err != nil {
 		return nil, e.NewError(e.ErrDecodeRequestBody, "error while parsing the req.body", err)
 	}
+	log.Info().Msgf("Successfully retrived all user details", allUserDetails)
 
 	var userDetails []*dto.UserDetails
 
@@ -151,7 +157,7 @@ func (s *userServiceImpl) DeleteUserById(r *http.Request) error {
 		}
 		return e.NewError(e.ErrExecuteSQL, "error while deleting the user", err)
 	}
-	log.Info().Msg("succesfully deleted user")
+	log.Info().Msgf("succesfully deleted user with id %d", args.UserId)
 
 	return nil
 }

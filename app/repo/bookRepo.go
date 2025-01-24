@@ -90,7 +90,7 @@ func (r *bookRepoImpl) GetAllBooks() ([]Book, error) {
 	var books []Book
 
 	// Fetch all books
-	result := r.db.Find(&books)
+	result := r.db.Where("status IN (1,2)").Find(&books)
 	if result.Error != nil {
 		fmt.Println("error retriving all book details")
 		return nil, result.Error

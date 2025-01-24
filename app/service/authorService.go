@@ -77,6 +77,7 @@ func (s *authorServiceImpl) GetAuthorById(r *http.Request) (*dto.GetAuthorDetail
 		}
 		return nil, e.NewError(e.ErrGetAuthorById, "error while getting author by id", err)
 	}
+	log.Info().Msgf("Successfully get author with name %s:", authorName)
 
 	return &dto.GetAuthorDetailResponse{
 		AuthorName: authorName,
@@ -129,6 +130,7 @@ func (s *authorServiceImpl) GetallAuthorDetails(r *http.Request) ([]dto.AuthorDe
 		authorDetails = append(authorDetails, authorDetail)
 		fmt.Printf("the book details: %v", authorDetails)
 	}
+	log.Info().Msgf("Successfully retrived all author details %d:", authorDetails)
 
 	return authorDetails, nil
 
@@ -155,7 +157,7 @@ func (s *authorServiceImpl) DeleteAuthorById(r *http.Request) error {
 		}
 		return e.NewError(e.ErrDeleteAuthor, "error while getting all author details", err)
 	}
-	log.Info().Msg("Successfully removed the author")
+	log.Info().Msgf("Successfully removed the author with id", args.AuthorId)
 
 	return nil
 }
