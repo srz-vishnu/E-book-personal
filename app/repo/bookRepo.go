@@ -12,7 +12,7 @@ import (
 type BookRepo interface {
 	CreateBook(args *dto.BookInputRequest) (int64, error)
 	UpdateBook(args *dto.BookUpdateRequest) error
-	GetAllBooks() ([]Book, error)
+	GetAllBooks() ([]*Book, error)
 	GetOneBook(bookId int) (string, error)
 	DeleteBookById(args *dto.BookDeleteRequest) error
 }
@@ -86,11 +86,11 @@ func (r *bookRepoImpl) GetOneBook(bookId int) (string, error) {
 	return result.Title, nil
 }
 
-func (r *bookRepoImpl) GetAllBooks() ([]Book, error) {
-	var books []Book
+func (r *bookRepoImpl) GetAllBooks() ([]*Book, error) {
+	var books []*Book
 
 	// Fetch all books
-	result := r.db.Where("status IN (1,2)").Find(&books)
+	result := r.db.Table("books").Where("status IN (1,2)").Find(&books)
 	if result.Error != nil {
 		fmt.Println("error retriving all book details")
 		return nil, result.Error

@@ -33,6 +33,12 @@ func ConnectDb() (*gorm.DB, error) {
 		log.Fatal("connection error", err)
 	}
 
+	//automigration call
+
+	if err := Automigration(db); err != nil {
+		log.Fatal("Error in migration", err)
+	}
+
 	sqlDb, err := db.DB()
 	if err != nil {
 		log.Fatal("connection error", err)
